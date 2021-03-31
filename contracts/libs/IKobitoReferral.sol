@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-interface ISailReferral {
+interface IKobitoReferral {
     /**
      * @dev Record referral.
      */
