@@ -6,7 +6,7 @@ import "./libs/IBEP20.sol";
 import "./libs/SafeBEP20.sol";
 import "./libs/IKobitoReferral.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-ß
+
 contract KobitoReferral is IKobitoReferral, Ownable {
     using SafeBEP20 for IBEP20;
 
