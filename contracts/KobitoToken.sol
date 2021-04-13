@@ -4,8 +4,8 @@ pragma solidity 0.6.12;
 
 import "./libs/BEP20.sol";
 
-// KobitoToken with Governance.
-contract KobitoToken is BEP20("Kobito Token", "KBT") {
+// FarmHive with Governance.
+contract FarmHive is BEP20("FarmHive Token", "FARMHIVE") {
     // Burn address
     address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
