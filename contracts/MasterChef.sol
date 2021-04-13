@@ -9,9 +9,9 @@ import "./libs/IKobitoReferral.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "./KobitoToken.sol";
+import "./FarmHiveToken.sol";
 
-// MasterChef is the master of Kobito. He can make Kobito and he is a fair guy.
+// MasterChef is the master of FarmHive. He can make FarmHive and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once KBT is sufficiently
@@ -30,10 +30,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
         // We do some fancy math here. Basically, any point in time, the amount of KBTs
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accKobitoPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accFarmHivePerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accKobitoPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accFarmHivePerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -44,19 +44,19 @@ contract MasterChef is Ownable, ReentrancyGuard {
         IBEP20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. KBTs to distribute per block.
         uint256 lastRewardBlock;  // Last block number that KBTs distribution occurs.
-        uint256 accKobitoPerShare;   // Accumulated KBTs per share, times 1e12. See below.
+        uint256 accFarmHivePerShare;   // Accumulated KBTs per share, times 1e12. See below.
         uint16 depositFeeBP;      // Deposit fee in basis points
     }
 
-    // The KBT TOKEN!
-    KobitoToken public kobito;
+    // The FARMHIVE TOKEN!
+    FarmHiveToken public farmHive;
     // Dev address.
     address public devAddress;
     // Deposit Fee address
     address public feeAddress;
     // KBT tokens created per block.
-    uint256 public kobitoPerBlock;
-    // Bonus muliplier for early kobito makers.
+    uint256 public farmHivePerBlock;
+    // Bonus muliplier for early farmhive makers.
     uint256 public constant BONUS_MULTIPLIER = 1;
 
     // Initial emission rate: 1 KBT per block.
@@ -80,7 +80,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     uint256 public startBlock;
 
     // Kobito referral contract address.
-    IKobitoReferral public kobitoReferral;
+    IKobitoReferral public farmHiveReferral;
     // Referral commission rate in basis points.
     uint16 public referralCommissionRate = 200;
     // Max referral commission rate: 20%.
@@ -93,15 +93,15 @@ contract MasterChef is Ownable, ReentrancyGuard {
     event ReferralCommissionPaid(address indexed user, address indexed referrer, uint256 commissionAmount);
 
     constructor(
-        KobitoToken _kobito,
+        FarmHiveToken _farmHive,
         uint256 _startBlock
     ) public {
-        kobito = _kobito;
+        farmHive = _farmHive;
         startBlock = _startBlock;
 
         devAddress = msg.sender;
         feeAddress = msg.sender;
-        kobitoPerBlock = INITIAL_EMISSION_RATE;
+        farmHivePerBlock = INITIAL_EMISSION_RATE;
     }
 
     function poolLength() external view returns (uint256) {
@@ -121,7 +121,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accKobitoPerShare: 0,
+            accFarmHivePerShare: 0,
             depositFeeBP: _depositFeeBP
         }));
     }
@@ -143,17 +143,17 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // View function to see pending KBTs on frontend.
-    function pendingKobito(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingFarmHive(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accKobitoPerShare = pool.accKobitoPerShare;
+        uint256 accFarmHivePerShare = pool.accFarmHivePerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 kobitoReward = multiplier.mul(kobitoPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accKobitoPerShare = accKobitoPerShare.add(kobitoReward.mul(1e12).div(lpSupply));
+            uint256 farmHiveReward = multiplier.mul(farmHivePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accFarmHivePerShare = accFarmHivePerShare.add(farmHiveReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accKobitoPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accFarmHivePerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -176,10 +176,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 kobitoReward = multiplier.mul(kobitoPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        kobito.mint(devAddress, kobitoReward.div(10));
-        kobito.mint(address(this), kobitoReward);
-        pool.accKobitoPerShare = pool.accKobitoPerShare.add(kobitoReward.mul(1e12).div(lpSupply));
+        uint256 farmHiveReward = multiplier.mul(farmHivePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        farmHive.mint(devAddress, farmHiveReward.div(10));
+        farmHive.mint(address(this), farmHiveReward);
+        pool.accFarmHivePerShare = pool.accFarmHivePerShare.add(farmHiveReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -188,19 +188,19 @@ contract MasterChef is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (_amount > 0 && address(kobitoReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
-            kobitoReferral.recordReferral(msg.sender, _referrer);
+        if (_amount > 0 && address(farmHiveReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
+            farmHiveReferral.recordReferral(msg.sender, _referrer);
         }
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accKobitoPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accFarmHivePerShare).div(1e12).sub(user.rewardDebt);
             if (pending > 0) {
-                safeKobitoTransfer(msg.sender, pending);
+                safeFarmHiveTransfer(msg.sender, pending);
                 payReferralCommission(msg.sender, pending);
             }
         }
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            if (address(pool.lpToken) == address(kobito)) {
+            if (address(pool.lpToken) == address(farmHive)) {
                 uint256 transferTax = _amount.mul(2).div(100);
                 _amount = _amount.sub(transferTax);
             }
@@ -212,7 +212,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
                 user.amount = user.amount.add(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accKobitoPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accFarmHivePerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -222,16 +222,16 @@ contract MasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accKobitoPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accFarmHivePerShare).div(1e12).sub(user.rewardDebt);
         if (pending > 0) {
-            safeKobitoTransfer(msg.sender, pending);
+            safeFarmHiveTransfer(msg.sender, pending);
             payReferralCommission(msg.sender, pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accKobitoPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accFarmHivePerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -246,16 +246,16 @@ contract MasterChef is Ownable, ReentrancyGuard {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe kobito transfer function, just in case if rounding error causes pool to not have enough KBTs.
-    function safeKobitoTransfer(address _to, uint256 _amount) internal {
-        uint256 kobitoBal = kobito.balanceOf(address(this));
+    // Safe farmHive transfer function, just in case if rounding error causes pool to not have enough KBTs.
+    function safeFarmHiveTransfer(address _to, uint256 _amount) internal {
+        uint256 farmHiveBal = farmHive.balanceOf(address(this));
         bool transferSuccess = false;
-        if (_amount > kobitoBal) {
-            transferSuccess = kobito.transfer(_to, kobitoBal);
+        if (_amount > farmHiveBal) {
+            transferSuccess = farmHive.transfer(_to, farmHiveBal);
         } else {
-            transferSuccess = kobito.transfer(_to, _amount);
+            transferSuccess = farmHive.transfer(_to, _amount);
         }
-        require(transferSuccess, "safeKobitoTransfer: Transfer failed");
+        require(transferSuccess, "safeFarmHiveTransfer: Transfer failed");
     }
 
     // Update dev address by the previous dev.
@@ -272,33 +272,33 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // Reduce emission rate by 3% every 9,600 blocks ~ 8hours. This function can be called publicly.
     function updateEmissionRate() public {
         require(block.number > startBlock, "updateEmissionRate: Can only be called after mining starts");
-        require(kobitoPerBlock > MINIMUM_EMISSION_RATE, "updateEmissionRate: Emission rate has reached the minimum threshold");
+        require(farmHivePerBlock > MINIMUM_EMISSION_RATE, "updateEmissionRate: Emission rate has reached the minimum threshold");
 
         uint256 currentIndex = block.number.sub(startBlock).div(EMISSION_REDUCTION_PERIOD_BLOCKS);
         if (currentIndex <= lastReductionPeriodIndex) {
             return;
         }
 
-        uint256 newEmissionRate = kobitoPerBlock;
+        uint256 newEmissionRate = farmHivePerBlock;
         for (uint256 index = lastReductionPeriodIndex; index < currentIndex; ++index) {
             newEmissionRate = newEmissionRate.mul(1e4 - EMISSION_REDUCTION_RATE_PER_PERIOD).div(1e4);
         }
 
         newEmissionRate = newEmissionRate < MINIMUM_EMISSION_RATE ? MINIMUM_EMISSION_RATE : newEmissionRate;
-        if (newEmissionRate >= kobitoPerBlock) {
+        if (newEmissionRate >= farmHivePerBlock) {
             return;
         }
 
         massUpdatePools();
         lastReductionPeriodIndex = currentIndex;
-        uint256 previousEmissionRate = kobitoPerBlock;
-        kobitoPerBlock = newEmissionRate;
+        uint256 previousEmissionRate = farmHivePerBlock;
+        farmHivePerBlock = newEmissionRate;
         emit EmissionRateUpdated(msg.sender, previousEmissionRate, newEmissionRate);
     }
 
     // Update the kobtio referral contract address by the owner
-    function setKobitoReferral(IKobitoReferral _kobitoReferral) public onlyOwner {
-        kobitoReferral = _kobitoReferral;
+    function setKobitoReferral(IKobitoReferral _farmHiveReferral) public onlyOwner {
+        farmHiveReferral = _farmHiveReferral;
     }
 
     // Update referral commission rate by the owner
@@ -309,12 +309,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Pay referral commission to the referrer who referred this user.
     function payReferralCommission(address _user, uint256 _pending) internal {
-        if (address(kobitoReferral) != address(0) && referralCommissionRate > 0) {
-            address referrer = kobitoReferral.getReferrer(_user);
+        if (address(farmHiveReferral) != address(0) && referralCommissionRate > 0) {
+            address referrer = farmHiveReferral.getReferrer(_user);
             uint256 commissionAmount = _pending.mul(referralCommissionRate).div(10000);
 
             if (referrer != address(0) && commissionAmount > 0) {
-                kobito.mint(referrer, commissionAmount);
+                farmHive.mint(referrer, commissionAmount);
                 emit ReferralCommissionPaid(_user, referrer, commissionAmount);
             }
         }
